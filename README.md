@@ -1,7 +1,8 @@
 # FastAmogusCounter.jl
 
 ## What this is
- - fast
+ - fast 
+   - last time I run it it found 2339 amogi in a 2000x2000 image in three seconds, and that was on a 12 year old computer
  - stupid
  - a sorta usable package
  - a counter for tiny Among Us characters in an image
