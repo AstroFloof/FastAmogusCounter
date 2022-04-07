@@ -16,11 +16,22 @@
 
 ## How to use
 
+### Option 1
 ```julia
 using Pkg
-pkg"add https://github.com/AstroFloof/FastAmogusCounter.jl.git"
+pkg"add https://github.com/AstroFloof/FastAmogusCounter.jl.git#master"
 using FastAmogusCounter
 count_amogus("path/to/thing.png")
+```
+### Option 2
+```sh
+git clone https://github.com/AstroFloof/FastAmogusCounter.jl.git
+cd FastAmogusCounter
+julia --project
+```
+```julia
+using Pkg
+Pkg.test()
 ```
 
 ## Issues
