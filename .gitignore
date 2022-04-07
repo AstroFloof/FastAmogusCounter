@@ -10,6 +10,7 @@ docs/build/
 docs/site/
 Manifest.toml
 .idea
+.vscode
 cmake-build-*/
 .idea/**/mongoSettings.xml
 *.iws
