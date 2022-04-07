@@ -15,23 +15,24 @@
 #### Assets yoinked from [analysus](https://github.com/Feyko/analysus/tree/main/amogi/templates) with Feyko's permission because I wanted to do some Julia and try to compete a bit
 
 ## How to use
+> Note: this algorithm is fastest when run with multiple threads, so launch julia with `-t X` or `--threads X` where X is your computer's logical processor count.
+>> Note Note: it's usually better in the long run to put `alias julia="julia -t X"` in your shell's init script.
 
-### Option 1
+### Option 1 - Install with Pkg
 ```julia
 using Pkg
 pkg"add https://github.com/AstroFloof/FastAmogusCounter.jl.git#master"
 using FastAmogusCounter
 count_amogus("path/to/thing.png")
 ```
-### Option 2
+### Option 2 - Clone and tinker
 ```sh
 git clone https://github.com/AstroFloof/FastAmogusCounter.jl.git
 cd FastAmogusCounter
 julia --project
-```
-```julia
-using Pkg
-Pkg.test()
+
+julia> ]
+(FastAmogusCounter) pkg> test
 ```
 
 ## Issues
