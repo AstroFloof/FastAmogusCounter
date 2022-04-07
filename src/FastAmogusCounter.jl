@@ -1,9 +1,17 @@
 
 module FastAmogusCounter
+
+    import Base.Threads: nthreads, threadid, @threads, Atomic, atomic_add!
+
+    const PACKAGE_ROOT = normpath(joinpath(@__DIR__, ".."))
+    const SRC_DIR = joinpath(PACKAGE_ROOT, "src")
+    const SHAPES_DIR = joinpath(SRC_DIR, "shapes")
+    const TEST_DIR = joinpath(PACKAGE_ROOT, "test")
+
     include("./LibAmogusCounter.jl")
 
     shape_files = PNG[
-        PNG("./src/shapes/$name.png") for name in String[
+        PNG(joinpath(SHAPES_DIR, "$name.png")) for name in String[
                 "3x5",
                 "4x4-short-backpack",
                 "4x4",
