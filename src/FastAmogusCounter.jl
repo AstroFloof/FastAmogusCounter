@@ -1,8 +1,6 @@
 
 module FastAmogusCounter
 
-    import Base.Threads: nthreads, threadid, @threads, Atomic, atomic_add!
-
     const PACKAGE_ROOT = normpath(joinpath(@__DIR__, ".."))
     const SRC_DIR = joinpath(PACKAGE_ROOT, "src")
     const SHAPES_DIR = joinpath(SRC_DIR, "shapes")
@@ -33,18 +31,8 @@ module FastAmogusCounter
 
     export count_amogus
     function count_amogus(filename::String)::Int
-
-        image = PNG(filename)
-
-        global count = Atomic{Int}(count_amogi(image, shape_files[1]))
-
-        @threads for s in shape_files[2:end]::Vector{PNG}
-            global count
-            count_part = count_amogi(image, s)
-            atomic_add!(count, count_part)
-        end
-
-        return count[]
-
+        image::PNG = PNG(filename)
+        
+        count_amogi(image, shape_files) 
     end
 end

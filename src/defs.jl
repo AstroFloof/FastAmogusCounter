@@ -9,8 +9,8 @@ const Strip = SubArray{
     2,
     Matrix{PIXEL},
     Tuple{
-        UnitRange{Int64},
-        UnitRange{Int64}
+        UnitRange{Int},
+        UnitRange{Int}
     },
     false
 }

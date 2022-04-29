@@ -1,27 +1,28 @@
 using FileIO: load
-import Base.Iterators: zip as iter_zip, repeated as self_iter, Enumerate
+using Base.Threads
+import Base.Iterators: repeated as self_iter, Enumerate
 include("defs.jl")
 
-@inline function lazy_short_circuit(f::F, args::Iterators.Zip)::Bool where {F <: Function}
-    all(Iterators.map(f, args))
-end
 
-@inline is_valid_amogus_component(pixel::PIXEL, core::PIXEL, should::Bool)::Bool = (pixel == core) == should
-
-@inline is_valid_amogus_component(t::Tuple{PIXEL, PIXEL, Bool})::Bool = is_valid_amogus_component(t...)
-
-
-@inline function is_amogus(rect::Strip, amogus::BitMatrix, core_colour::PIXEL)::Bool
-    lazy_short_circuit(is_valid_amogus_component, iter_zip(rect, self_iter(core_colour), amogus))
+@inline function is_valid_amogus_component(pixel::PIXEL, core::PIXEL, should::Bool)::Bool 
+    # tests whether the pixel is the same colour as the colour of the
+    # potential core of the among us figure, and whether it should be
+    (pixel == core) == should
 end
 
 function find_amogus(rect::Strip, shape::BitMatrix)::Bool
-    is_amogus(rect, shape, rect[@inbounds findfirst(shape)])
+    @inbounds let core_colour::PIXEL, idxs::CartesianIndices{2, Tuple{Base.OneTo{Int}, Base.OneTo{Int}}}
+        core_colour = rect[findfirst(shape)]
+        idxs = CartesianIndices(rect)
+        @simd for i in idxs
+            is_valid_amogus_component(rect[i], core_colour, shape[i]) || return false
+        end
+    end
+    true
 end
 
 function get_shapes(shape::PNG)::Vector{BitMatrix}
-    img::Matrix{RGBA{N0f8}} = load(shape)
-    @inbounds @views begin
+    @inbounds @views let img::Matrix{RGBA{N0f8}} = load(shape)
         up_right::BitMatrix = img .== BLACK
         up_left::BitMatrix = up_right |> rotl90 |> permutedims
 
@@ -34,31 +35,26 @@ function get_shapes(shape::PNG)::Vector{BitMatrix}
     end
 end
 
+function count_amogi_iter(PLACE::Matrix{PIXEL}, shape::PNG)::Int
 
-function count_amogi(place::PNG, shape::PNG)::Int #Vector{Tuple{IDX, Int}}
-
-    PLACE::Matrix{PIXEL} = RGB.(load(place))
     height, width = size(PLACE)
 
     locations::Vector{Tuple{IDX, Int}} = Tuple{IDX, Int}[]
 
-    amogi_shapes::Vector{BitMatrix} = @inbounds get_shapes(shape)
+    flipped_amogi::Vector{BitMatrix} = @inbounds get_shapes(shape)
 
-    for (i, shape) in enumerate(amogi_shapes)::Enumerate{Vector{BitMatrix}}
+    for (i, shape) in enumerate(flipped_amogi)::Enumerate{Vector{BitMatrix}}
 
         offset_h, offset_w = size(shape) .- 1
 
-        cols = 1:width-offset_w
         rows = 1:height-offset_h
+        cols = 1:width-offset_w
+       
+        @views for column in cols::UnitRange{Int}, row in rows::UnitRange{Int}
 
+            v::Strip = PLACE[row:row+offset_h, column:column+offset_w]
 
-        for column in cols::UnitRange{Int}, row in rows::UnitRange{Int}
-
-            v::Strip = @view PLACE[row:row+offset_h, column:column+offset_w]
-
-            if find_amogus(v, shape)::Bool
-                @inbounds push!(locations, (IDX(row, column), i))
-            end
+            find_amogus(v, shape) && @inbounds push!(locations, (IDX(row, column), i))
 
         end
     end
@@ -71,5 +67,25 @@ function count_amogi(place::PNG, shape::PNG)::Int #Vector{Tuple{IDX, Int}}
         onlymogus[idx:idx+window_offset][amogus_masks[type]] .= PLACE[idx:idx+window_offset][amogus_masks[type]]
     end
     save("./src/onlymogus.png", onlymogus)
-    println.(locations)=#
+    println.(locations)
+    =#
+end
+
+
+function count_amogi(place::PNG, shapes::Vector{PNG})::Int
+
+    PLACE::Matrix{PIXEL} = PIXEL.(load(place))
+    
+    # Variables for each thread to avoid race conditions (doesn't seem to be necessary)
+    # PLACE_COPIES = #=SMatrix{c, r, PIXEL, c*r}=#Matrix{PIXEL}[deepcopy(PLACE) for _ in 1:nthreads()]
+    counts::Vector{Int} = fill(0, nthreads())
+
+    # Threaded loop
+    @threads for s in shapes
+        t = threadid()
+        count_part = count_amogi_iter(PLACE, s)
+        counts[t] += count_part
+    end
+
+    return sum(counts)
 end
